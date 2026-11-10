@@ -1,0 +1,8 @@
+{
+  "name": "Remix Conexão Escolar: O Portal",
+  "description": "Plataforma centralizada para notícias, eventos, provas e informações essenciais, mantendo a comunidade escolar sempre atualizada e engajada.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
