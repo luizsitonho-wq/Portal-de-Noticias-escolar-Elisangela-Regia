@@ -6,7 +6,6 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence } from 'motion/react';
 
-// Tipagens estruturadas do portal
 import { 
   NewsItem, 
   FeedbackSubmission, 
@@ -20,7 +19,6 @@ import {
   PortalSettings
 } from './types';
 
-// Dados iniciais organizados por módulos
 import { 
   featuredNewsData, 
   quotesList, 
@@ -34,7 +32,6 @@ import {
   initialAdministrators
 } from './data/mockData';
 
-// Componentes da Interface Semântica
 import { Header } from './components/Header';
 import { FeaturedNews } from './components/FeaturedNews';
 import { QuoteOfTheDay } from './components/QuoteOfTheDay';
@@ -49,46 +46,35 @@ import { NewsModal } from './components/NewsModal';
 import { Footer } from './components/Footer';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { AdminPanel } from './components/AdminPanel';
+import { supabase, carregarDadoNuvem, salvarDadoNuvem } from './lib/supabase';
 
-/**
- * =========================================================================
- * COMPONENTE PRINCIPAL: PORTAL DE NOTÍCIAS DA ESCOLA CECÍLIA MENDES
- * =========================================================================
- */
+const DEFAULT_SETTINGS: PortalSettings = {
+  schoolName: 'Elisângela Régia',
+  description: 'Portal de Notícias Escolar',
+  address: 'Av. dos Estudantes, 1500 - Bairro Universitário',
+  phone: '(86) 3221-4500 / Ramal 102',
+  email: 'contato@elisangela-regia.edu.br',
+  morningShift: '07:00 às 12:20',
+  afternoonShift: '13:00 às 18:20',
+  officeHours: '08:00 às 17:00',
+  libraryHours: '07:30 às 18:00',
+  gremioName: 'Grêmio Estudantil',
+  gremioBoard: 'Diretoria de Imprensa',
+  gremioQuote: 'Trabalhando por uma escola viva, acolhedora, participativa e cheia de oportunidades!',
+};
+
 export default function App() {
-  // Estado de busca global
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [isLoadedFromCloud, setIsLoadedFromCloud] = useState<boolean>(false);
 
-  // Estado do Tema Escuro (Dark Mode) com persistência e preferência de sistema
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem('portal_theme');
     if (saved) return saved === 'dark';
     return typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
-  // 11. Configurações do Portal (Footer info)
-  const [portalSettings, setPortalSettings] = useState<PortalSettings>(() => {
-    const saved = localStorage.getItem('portal_settings');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return {
-      schoolName: 'Elisângela Régia',
-      description: 'Portal de Notícias Escolar',
-      address: 'Av. dos Estudantes, 1500 - Bairro Universitário',
-      phone: '(86) 3221-4500 / Ramal 102',
-      email: 'contato@elisangela-regia.edu.br',
-      morningShift: '07:00 às 12:20',
-      afternoonShift: '13:00 às 18:20',
-      officeHours: '08:00 às 17:00',
-      libraryHours: '07:30 às 18:00',
-      gremioName: 'Grêmio Estudantil',
-      gremioBoard: 'Diretoria de Imprensa',
-      gremioQuote: 'Trabalhando por uma escola viva, acolhedora, participativa e cheia de oportunidades!',
-    };
-  });
+  const [portalSettings, setPortalSettings] = useState<PortalSettings>(DEFAULT_SETTINGS);
 
-  // Sincroniza a classe 'dark' no elemento raiz html
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -103,157 +89,77 @@ export default function App() {
     setIsDarkMode((prev) => !prev);
   };
 
-  // Seção ativa para destaque no menu
   const [activeSection, setActiveSection] = useState<string>('inicio');
-
-  // Estado para controle da notícia aberta no modal de leitura
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
 
-  // Estados para o Painel do Administrador (Protegido via VITE_ADMIN_PASSWORD)
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
-    return localStorage.getItem('portal_admin_session') === 'true';
-  });
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(false);
   const [adminLoginModalOpen, setAdminLoginModalOpen] = useState<boolean>(false);
   const [adminPanelOpen, setAdminPanelOpen] = useState<boolean>(false);
 
+  // Estados principais do portal
+  const [featuredNews, setFeaturedNews] = useState<NewsItem>(featuredNewsData);
+  const [news, setNews] = useState<NewsItem[]>(initialNewsList);
+  const [quotes, setQuotes] = useState<Quote[]>(quotesList);
+  const [assessments, setAssessments] = useState<AssessmentItem[]>(assessmentsList);
+  const [events] = useState<SchoolEvent[]>(schoolEventsList);
+  const [starStudents, setStarStudents] = useState<StarStudent[]>(starStudentsList);
+  const [dailyMenus, setDailyMenus] = useState<DailyMenu[]>(weeklyMenuData);
+  const [gremioActions, setGremioActions] = useState<GremioAction[]>(gremioActionsList);
+  const [feedbacks, setFeedbacks] = useState<FeedbackSubmission[]>(initialFeedbacks);
+  const [administrators, setAdministrators] = useState<Administrator[]>(initialAdministrators);
+
   // =========================================================
-  // ESTADOS COM PERSISTÊNCIA NO LOCALSTORAGE
+  // CARREGA DADOS DO SUPABASE E VERIFICA SESSÃO AO ABRIR
   // =========================================================
+  useEffect(() => {
+    async function inicializarPortal() {
+      // 1. Verifica se o administrador já está logado
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData.session) {
+        setIsAdminLoggedIn(true);
+      }
 
-  // 1. Notícia Destaque Principal (Hero)
-  const [featuredNews, setFeaturedNews] = useState<NewsItem>(() => {
-    const saved = localStorage.getItem('portal_featured_news');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+      // 2. Busca todos os dados salvos na nuvem em paralelo
+      const [
+        cloudFeatured,
+        cloudNews,
+        cloudQuotes,
+        cloudAssessments,
+        cloudStudents,
+        cloudMenus,
+        cloudGremio,
+        cloudFeedbacks,
+        cloudAdmins,
+        cloudSettings,
+      ] = await Promise.all([
+        carregarDadoNuvem<NewsItem>('featured_news'),
+        carregarDadoNuvem<NewsItem[]>('news'),
+        carregarDadoNuvem<Quote[]>('quotes'),
+        carregarDadoNuvem<AssessmentItem[]>('assessments'),
+        carregarDadoNuvem<StarStudent[]>('star_students'),
+        carregarDadoNuvem<DailyMenu[]>('daily_menus'),
+        carregarDadoNuvem<GremioAction[]>('gremio_actions'),
+        carregarDadoNuvem<FeedbackSubmission[]>('feedbacks'),
+        carregarDadoNuvem<Administrator[]>('administrators'),
+        carregarDadoNuvem<PortalSettings>('settings'),
+      ]);
+
+      if (cloudFeatured) setFeaturedNews(cloudFeatured);
+      if (cloudNews) setNews(cloudNews);
+      if (cloudQuotes) setQuotes(cloudQuotes);
+      if (cloudAssessments) setAssessments(cloudAssessments);
+      if (cloudStudents) setStarStudents(cloudStudents);
+      if (cloudMenus) setDailyMenus(cloudMenus);
+      if (cloudGremio) setGremioActions(cloudGremio);
+      if (cloudFeedbacks) setFeedbacks(cloudFeedbacks);
+      if (cloudAdmins) setAdministrators(cloudAdmins);
+      if (cloudSettings) setPortalSettings(cloudSettings);
+
+      setIsLoadedFromCloud(true);
     }
-    return featuredNewsData;
-  });
 
-  // 2. Lista de Notícias do Diário
-  const [news, setNews] = useState<NewsItem[]>(() => {
-    const saved = localStorage.getItem('portal_news_list');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return initialNewsList;
-  });
-
-  // 3. Frases Inspiradoras do Dia
-  const [quotes, setQuotes] = useState<Quote[]>(() => {
-    const saved = localStorage.getItem('portal_quotes');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return quotesList;
-  });
-
-  // 4. Provas e Simulados
-  const [assessments, setAssessments] = useState<AssessmentItem[]>(() => {
-    const saved = localStorage.getItem('portal_assessments');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return assessmentsList;
-  });
-
-  // 5. Eventos Escolares
-  const [events] = useState<SchoolEvent[]>(() => {
-    const saved = localStorage.getItem('portal_events');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return schoolEventsList;
-  });
-
-  // 6. Alunos Destaque por Notas
-  const [starStudents, setStarStudents] = useState<StarStudent[]>(() => {
-    const saved = localStorage.getItem('portal_star_students');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return starStudentsList;
-  });
-
-  // 7. Cardápios da Semana
-  const [dailyMenus, setDailyMenus] = useState<DailyMenu[]>(() => {
-    const saved = localStorage.getItem('portal_daily_menus');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return weeklyMenuData;
-  });
-
-  // 8. Ações do Grêmio Cecília Mendes
-  const [gremioActions, setGremioActions] = useState<GremioAction[]>(() => {
-    const saved = localStorage.getItem('portal_gremio_actions');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return gremioActionsList;
-  });
-
-  // 9. Feedbacks e Dicas dos Alunos
-  const [feedbacks, setFeedbacks] = useState<FeedbackSubmission[]>(() => {
-    const saved = localStorage.getItem('portal_escola_feedbacks');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return initialFeedbacks;
-  });
-
-  // 10. Administradores da Equipe
-  const [administrators, setAdministrators] = useState<Administrator[]>(() => {
-    const saved = localStorage.getItem('portal_administrators');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return initialAdministrators;
-  });
-
-  // Salva no localStorage quando os estados mudam
-  useEffect(() => {
-    localStorage.setItem('portal_featured_news', JSON.stringify(featuredNews));
-  }, [featuredNews]);
-
-  useEffect(() => {
-    localStorage.setItem('portal_news_list', JSON.stringify(news));
-  }, [news]);
-
-  useEffect(() => {
-    localStorage.setItem('portal_quotes', JSON.stringify(quotes));
-  }, [quotes]);
-
-  useEffect(() => {
-    localStorage.setItem('portal_assessments', JSON.stringify(assessments));
-  }, [assessments]);
-
-  useEffect(() => {
-    localStorage.setItem('portal_star_students', JSON.stringify(starStudents));
-  }, [starStudents]);
-
-  useEffect(() => {
-    localStorage.setItem('portal_daily_menus', JSON.stringify(dailyMenus));
-  }, [dailyMenus]);
-
-  useEffect(() => {
-    localStorage.setItem('portal_gremio_actions', JSON.stringify(gremioActions));
-  }, [gremioActions]);
-
-  useEffect(() => {
-    localStorage.setItem('portal_escola_feedbacks', JSON.stringify(feedbacks));
-  }, [feedbacks]);
-
-  useEffect(() => {
-    localStorage.setItem('portal_administrators', JSON.stringify(administrators));
-  }, [administrators]);
-
-  useEffect(() => {
-    localStorage.setItem('portal_settings', JSON.stringify(portalSettings));
-  }, [portalSettings]);
-
-  useEffect(() => {
-    localStorage.setItem('portal_admin_session', isAdminLoggedIn ? 'true' : 'false');
-  }, [isAdminLoggedIn]);
+    inicializarPortal();
+  }, []);
 
   // =========================================================
   // HANDLERS DO PAINEL ADMINISTRATIVO
@@ -273,33 +179,41 @@ export default function App() {
     setAdminPanelOpen(true);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setIsAdminLoggedIn(false);
     setAdminPanelOpen(false);
-    localStorage.removeItem('portal_admin_session');
   };
 
-  // Funções de Gestão de Notícias
+  // Notícias
   const handleAddNews = (newItem: NewsItem) => {
-    setNews((prev) => [newItem, ...prev]);
+    setNews((prev) => {
+      const updated = [newItem, ...prev];
+      salvarDadoNuvem('news', updated);
+      return updated;
+    });
   };
 
-  const handleUpdateNews = (updated: NewsItem) => {
-    setNews((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-    if (featuredNews.id === updated.id) {
-      setFeaturedNews(updated);
+  const handleUpdateNews = (updatedItem: NewsItem) => {
+    setNews((prev) => {
+      const updated = prev.map((item) => (item.id === updatedItem.id ? updatedItem : item));
+      salvarDadoNuvem('news', updated);
+      return updated;
+    });
+    if (featuredNews.id === updatedItem.id) {
+      setFeaturedNews(updatedItem);
+      salvarDadoNuvem('featured_news', updatedItem);
     }
   };
 
   const handleDeleteNews = (id: string) => {
     setNews((prev) => {
       const filtered = prev.filter((item) => item.id !== id);
+      salvarDadoNuvem('news', filtered);
       if (featuredNews.id === id) {
-        if (filtered.length > 0) {
-          setFeaturedNews(filtered[0]);
-        } else {
-          setFeaturedNews(featuredNewsData);
-        }
+        const nextFeatured = filtered.length > 0 ? filtered[0] : featuredNewsData;
+        setFeaturedNews(nextFeatured);
+        salvarDadoNuvem('featured_news', nextFeatured);
       }
       return filtered;
     });
@@ -307,111 +221,197 @@ export default function App() {
 
   const handleUpdateFeaturedNews = (newFeatured: NewsItem) => {
     setFeaturedNews(newFeatured);
-    // Se não estiver na lista geral, adiciona
+    salvarDadoNuvem('featured_news', newFeatured);
     setNews((prev) => {
       const exists = prev.some((item) => item.id === newFeatured.id);
-      if (!exists) return [newFeatured, ...prev];
-      return prev.map((item) => (item.id === newFeatured.id ? newFeatured : item));
+      const updated = !exists
+        ? [newFeatured, ...prev]
+        : prev.map((item) => (item.id === newFeatured.id ? newFeatured : item));
+      salvarDadoNuvem('news', updated);
+      return updated;
     });
   };
 
-  // Funções de Gestão de Feedbacks
+  // Feedbacks (Visitantes e Admin)
   const handleAddFeedback = (newFb: FeedbackSubmission) => {
-    setFeedbacks((prev) => [newFb, ...prev]);
+    setFeedbacks((prev) => {
+      const updated = [newFb, ...prev];
+      salvarDadoNuvem('feedbacks', updated);
+      return updated;
+    });
   };
 
-  const handleUpdateFeedback = (updated: FeedbackSubmission) => {
-    setFeedbacks((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+  const handleUpdateFeedback = (updatedItem: FeedbackSubmission) => {
+    setFeedbacks((prev) => {
+      const updated = prev.map((item) => (item.id === updatedItem.id ? updatedItem : item));
+      salvarDadoNuvem('feedbacks', updated);
+      return updated;
+    });
   };
 
   const handleDeleteFeedback = (id: string) => {
-    setFeedbacks((prev) => prev.filter((item) => item.id !== id));
+    setFeedbacks((prev) => {
+      const updated = prev.filter((item) => item.id !== id);
+      salvarDadoNuvem('feedbacks', updated);
+      return updated;
+    });
   };
 
   const handleBoostFeedbackLikes = (id: string, amount: number) => {
-    setFeedbacks((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, likes: item.likes + amount } : item))
-    );
+    setFeedbacks((prev) => {
+      const updated = prev.map((item) => (item.id === id ? { ...item, likes: item.likes + amount } : item));
+      salvarDadoNuvem('feedbacks', updated);
+      return updated;
+    });
   };
 
-  // Funções de Gestão do Cardápio
+  // Cardápio
   const handleUpdateDailyMenu = (dayOfWeek: string, updatedMenu: DailyMenu) => {
-    setDailyMenus((prev) =>
-      prev.map((item) => (item.dayOfWeek === dayOfWeek ? updatedMenu : item))
-    );
+    setDailyMenus((prev) => {
+      const updated = prev.map((item) => (item.dayOfWeek === dayOfWeek ? updatedMenu : item));
+      salvarDadoNuvem('daily_menus', updated);
+      return updated;
+    });
   };
 
   const handleReorderDailyMenus = (reordered: DailyMenu[]) => {
     setDailyMenus(reordered);
+    salvarDadoNuvem('daily_menus', reordered);
   };
 
-  // Funções de Gestão de Provas
+  // Provas
   const handleAddAssessment = (item: AssessmentItem) => {
-    setAssessments((prev) => [item, ...prev]);
+    setAssessments((prev) => {
+      const updated = [item, ...prev];
+      salvarDadoNuvem('assessments', updated);
+      return updated;
+    });
   };
 
   const handleUpdateAssessment = (item: AssessmentItem) => {
-    setAssessments((prev) => prev.map((a) => (a.id === item.id ? item : a)));
+    setAssessments((prev) => {
+      const updated = prev.map((a) => (a.id === item.id ? item : a));
+      salvarDadoNuvem('assessments', updated);
+      return updated;
+    });
   };
 
   const handleDeleteAssessment = (id: string) => {
-    setAssessments((prev) => prev.filter((item) => item.id !== id));
+    setAssessments((prev) => {
+      const updated = prev.filter((item) => item.id !== id);
+      salvarDadoNuvem('assessments', updated);
+      return updated;
+    });
   };
 
-  // Funções de Gestão de Alunos Destaque
+  // Alunos Destaque
   const handleAddStarStudent = (student: StarStudent) => {
-    setStarStudents((prev) => [student, ...prev]);
+    setStarStudents((prev) => {
+      const updated = [student, ...prev];
+      salvarDadoNuvem('star_students', updated);
+      return updated;
+    });
   };
 
   const handleUpdateStarStudent = (student: StarStudent) => {
-    setStarStudents((prev) => prev.map((s) => (s.id === student.id ? student : s)));
+    setStarStudents((prev) => {
+      const updated = prev.map((s) => (s.id === student.id ? student : s));
+      salvarDadoNuvem('star_students', updated);
+      return updated;
+    });
   };
 
   const handleDeleteStarStudent = (id: string) => {
-    setStarStudents((prev) => prev.filter((s) => s.id !== id));
+    setStarStudents((prev) => {
+      const updated = prev.filter((s) => s.id !== id);
+      salvarDadoNuvem('star_students', updated);
+      return updated;
+    });
   };
 
-  // Funções de Gestão de Administradores
+  // Administradores
   const handleAddAdministrator = (admin: Administrator) => {
-    setAdministrators((prev) => [admin, ...prev]);
+    setAdministrators((prev) => {
+      const updated = [admin, ...prev];
+      salvarDadoNuvem('administrators', updated);
+      return updated;
+    });
   };
 
   const handleUpdateAdministrator = (admin: Administrator) => {
-    setAdministrators((prev) => prev.map((a) => (a.id === admin.id ? admin : a)));
+    setAdministrators((prev) => {
+      const updated = prev.map((a) => (a.id === admin.id ? admin : a));
+      salvarDadoNuvem('administrators', updated);
+      return updated;
+    });
   };
 
   const handleDeleteAdministrator = (id: string) => {
-    setAdministrators((prev) => prev.filter((a) => a.id !== id));
+    setAdministrators((prev) => {
+      const updated = prev.filter((a) => a.id !== id);
+      salvarDadoNuvem('administrators', updated);
+      return updated;
+    });
   };
 
-  // Funções de Gestão do Grêmio
+  // Grêmio
   const handleAddGremioAction = (action: GremioAction) => {
-    setGremioActions((prev) => [action, ...prev]);
+    setGremioActions((prev) => {
+      const updated = [action, ...prev];
+      salvarDadoNuvem('gremio_actions', updated);
+      return updated;
+    });
   };
 
   const handleUpdateGremioAction = (action: GremioAction) => {
-    setGremioActions((prev) => prev.map((g) => (g.id === action.id ? action : g)));
+    setGremioActions((prev) => {
+      const updated = prev.map((g) => (g.id === action.id ? action : g));
+      salvarDadoNuvem('gremio_actions', updated);
+      return updated;
+    });
   };
 
   const handleDeleteGremioAction = (id: string) => {
-    setGremioActions((prev) => prev.filter((g) => g.id !== id));
+    setGremioActions((prev) => {
+      const updated = prev.filter((g) => g.id !== id);
+      salvarDadoNuvem('gremio_actions', updated);
+      return updated;
+    });
   };
 
-  // Funções de Frase do Dia
+  // Frase do Dia
   const handleAddQuote = (quote: Quote) => {
-    setQuotes((prev) => [quote, ...prev]);
+    setQuotes((prev) => {
+      const updated = [quote, ...prev];
+      salvarDadoNuvem('quotes', updated);
+      return updated;
+    });
   };
 
-  const handleUpdateQuote = (updated: Quote) => {
-    setQuotes((prev) => prev.map((q) => (q.id === updated.id ? updated : q)));
+  const handleUpdateQuote = (updatedItem: Quote) => {
+    setQuotes((prev) => {
+      const updated = prev.map((q) => (q.id === updatedItem.id ? updatedItem : q));
+      salvarDadoNuvem('quotes', updated);
+      return updated;
+    });
   };
 
   const handleDeleteQuote = (id: string) => {
-    setQuotes((prev) => prev.filter((q) => q.id !== id));
+    setQuotes((prev) => {
+      const updated = prev.filter((q) => q.id !== id);
+      salvarDadoNuvem('quotes', updated);
+      return updated;
+    });
   };
 
-  // Função para Restaurar todos os dados originais
-  const handleResetAllData = () => {
+  // Configurações do Portal
+  const handleUpdateSettings = (newSettings: PortalSettings) => {
+    setPortalSettings(newSettings);
+    salvarDadoNuvem('settings', newSettings);
+  };
+
+  // Restaurar dados originais na nuvem
+  const handleResetAllData = async () => {
     setFeaturedNews(featuredNewsData);
     setNews(initialNewsList);
     setQuotes(quotesList);
@@ -421,10 +421,24 @@ export default function App() {
     setGremioActions(gremioActionsList);
     setFeedbacks(initialFeedbacks);
     setAdministrators(initialAdministrators);
-    localStorage.clear();
+    setPortalSettings(DEFAULT_SETTINGS);
+
+    if (isLoadedFromCloud) {
+      await Promise.all([
+        salvarDadoNuvem('featured_news', featuredNewsData),
+        salvarDadoNuvem('news', initialNewsList),
+        salvarDadoNuvem('quotes', quotesList),
+        salvarDadoNuvem('assessments', assessmentsList),
+        salvarDadoNuvem('star_students', starStudentsList),
+        salvarDadoNuvem('daily_menus', weeklyMenuData),
+        salvarDadoNuvem('gremio_actions', gremioActionsList),
+        salvarDadoNuvem('feedbacks', initialFeedbacks),
+        salvarDadoNuvem('administrators', initialAdministrators),
+        salvarDadoNuvem('settings', DEFAULT_SETTINGS),
+      ]);
+    }
   };
 
-  // Função de rolagem suave até a seção selecionada
   const scrollToSection = (sectionId: string) => {
     setActiveSection(sectionId);
     if (sectionId === 'inicio') {
@@ -439,11 +453,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col font-sans selection:bg-emerald-200 selection:text-emerald-900 dark:selection:bg-emerald-900 dark:selection:text-emerald-100 transition-colors duration-200">
-      {/* 
-        =========================================================
-        1. CABEÇALHO SEMÂNTICO (<header>)
-        =========================================================
-      */}
       <Header
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
@@ -455,70 +464,26 @@ export default function App() {
         onToggleTheme={handleToggleTheme}
       />
 
-      {/* 
-        =========================================================
-        2. CONTEÚDO PRINCIPAL SEMÂNTICO (<main>)
-        =========================================================
-      */}
       <main id="conteudo-principal" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 sm:space-y-16">
-        
-        {/* Bloco Inicial: Notícia Destaque + Frase do Dia (logo abaixo) */}
         <div id="inicio" className="space-y-6">
-          {/* Notícia Destaque Principal */}
           <FeaturedNews
             news={featuredNews}
             onOpenModal={(item) => setSelectedNews(item)}
           />
-
-          {/* Frase do Dia (Pensamento Educacional) */}
           <QuoteOfTheDay quotes={quotes} />
         </div>
 
-        {/* 
-          =========================================================
-          3. DIÁRIO DA ESCOLA (Notícias Diárias, Semanais, Mensais)
-          =========================================================
-        */}
         <SchoolNewsSection
           newsList={news}
           searchTerm={searchTerm}
           onOpenModal={(item) => setSelectedNews(item)}
         />
 
-        {/* 
-          =========================================================
-          4. CALENDÁRIO ACADÊMICO: PROVAS & SIMULADOS
-          =========================================================
-        */}
         <ExamsSection assessments={assessments} />
-
-        {/* 
-          =========================================================
-          5. PRÓXIMOS EVENTOS ESCOLARES
-          =========================================================
-        */}
         <EventsSection events={events} />
-
-        {/* 
-          =========================================================
-          6. MURAL DE HONRA: ALUNOS DESTAQUE DE CADA SALA
-          =========================================================
-        */}
         <StarStudentsSection students={starStudents} />
-
-        {/* 
-          =========================================================
-          7. COMIDA DO DIA / CARDÁPIO ESCOLAR BALANCEADO
-          =========================================================
-        */}
         <DailyMenuSection menus={dailyMenus} />
 
-        {/* 
-          =========================================================
-          8. AÇÕES DO GRÊMIO ESTUDANTIL CECÍLIA MENDES
-             (Identidade Visual: Roxo, Lilás e Dourado/Amarelo)
-          =========================================================
-        */}
         <GremioSection
           actions={gremioActions}
           onOpenFeedback={() => scrollToSection('feedback-sugestoes')}
@@ -527,22 +492,12 @@ export default function App() {
           gremioQuote={portalSettings.gremioQuote}
         />
 
-        {/* 
-          =========================================================
-          9. FORMULÁRIO DE FEEDBACK, SUGESTÕES E MACETES DE ESTUDO
-          =========================================================
-        */}
         <FeedbackSection
           feedbacks={feedbacks}
           onAddFeedback={handleAddFeedback}
         />
       </main>
 
-      {/* 
-        =========================================================
-        10. MODAL DE LEITURA DA NOTÍCIA COMPLETA
-        =========================================================
-      */}
       <AnimatePresence>
         {selectedNews && (
           <NewsModal
@@ -553,11 +508,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* 
-        =========================================================
-        11. MODAL DE LOGIN DO ADMINISTRADOR (VITE_ADMIN_PASSWORD)
-        =========================================================
-      */}
       <AnimatePresence>
         {adminLoginModalOpen && (
           <AdminLoginModal
@@ -568,11 +518,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* 
-        =========================================================
-        12. PAINEL DO ADMINISTRADOR COMPLETO (Equipe DS & Grêmio)
-        =========================================================
-      */}
       <AnimatePresence>
         {adminPanelOpen && (
           <AdminPanel
@@ -614,17 +559,12 @@ export default function App() {
             onUpdateQuote={handleUpdateQuote}
             onDeleteQuote={handleDeleteQuote}
             portalSettings={portalSettings}
-            onUpdatePortalSettings={setPortalSettings}
+            onUpdatePortalSettings={handleUpdateSettings}
             onResetAllData={handleResetAllData}
           />
         )}
       </AnimatePresence>
 
-      {/* 
-        =========================================================
-        13. RODAPÉ INSTITUCIONAL SEMÂNTICO (<footer>)
-        =========================================================
-      */}
       <Footer 
         onNavigate={scrollToSection} 
         onOpenAdmin={handleOpenAdmin}
@@ -633,4 +573,3 @@ export default function App() {
     </div>
   );
 }
-
