@@ -15,10 +15,11 @@ import {
   AlertCircle, 
   Sparkles, 
   GraduationCap, 
-  Users, 
   ArrowRight,
-  CheckCircle2
+  CheckCircle2,
+  Mail
 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface AdminLoginModalProps {
   isOpen: boolean;
@@ -26,10 +27,6 @@ interface AdminLoginModalProps {
   onLoginSuccess: () => void;
 }
 
-/**
- * Obtém a senha de acesso ao Painel Administrativo configurada via variável de ambiente.
- * Em produção, defina VITE_ADMIN_PASSWORD no arquivo .env ou nas variáveis da sua plataforma de deploy.
- */
 export const getAdminPassword = (): string => {
   const envPassword = import.meta.env.VITE_ADMIN_PASSWORD;
   return typeof envPassword === 'string' ? envPassword.trim() : '';
@@ -37,16 +34,13 @@ export const getAdminPassword = (): string => {
 
 export const ADMIN_PASSWORD = getAdminPassword();
 
-/**
- * Componente: Modal de Acesso ao Painel do Administrador
- * Protegido por credencial configurada via variável de ambiente (VITE_ADMIN_PASSWORD)
- * para a Equipe Editorial, Turma de Desenvolvimento de Sistemas e Diretoria de Imprensa.
- */
 export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
   isOpen,
   onClose,
   onLoginSuccess,
 }) => {
+  // Coloque aqui o e-mail que você cadastrou no Supabase Authentication
+  const [email, setEmail] = useState('luizsitonho@aluno.edu.pi.gov.br');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -55,38 +49,32 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     setIsSubmitting(true);
 
-    const configuredPassword = getAdminPassword();
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password: password,
+    });
 
-    // Validação da senha com delay visual de verificação de credenciais
-    setTimeout(() => {
-      if (!configuredPassword) {
+    if (!error) {
+      setIsSuccess(true);
+      setTimeout(() => {
         setIsSubmitting(false);
-        setErrorMessage('Aviso: VITE_ADMIN_PASSWORD não foi configurada no arquivo .env.');
-        return;
-      }
-
-      if (password === configuredPassword) {
-        setIsSuccess(true);
-        setTimeout(() => {
-          setIsSubmitting(false);
-          setIsSuccess(false);
-          setPassword('');
-          onLoginSuccess();
-        }, 800);
-      } else {
-        setIsSubmitting(false);
-        setErrorMessage('Senha incorreta! Verifique os dígitos e tente novamente.');
-      }
-    }, 400);
+        setIsSuccess(false);
+        setPassword('');
+        onLoginSuccess();
+      }, 600);
+    } else {
+      setIsSubmitting(false);
+      setErrorMessage('E-mail ou senha incorretos! Verifique suas credenciais do Supabase.');
+    }
   };
 
   const handleKeypadDigit = (digit: string) => {
-    if (password.length < 12) {
+    if (password.length < 20) {
       setPassword((prev) => prev + digit);
       setErrorMessage('');
     }
@@ -118,7 +106,6 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
         className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-gray-100 dark:border-slate-800 relative"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Modal Box */}
         <div className="bg-slate-900 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-800 relative">
           {/* Cabeçalho do Modal */}
           <div className="bg-slate-950 p-6 text-slate-100 border-b border-slate-800 relative overflow-hidden">
@@ -139,7 +126,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
               </div>
               <div>
                 <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded-md border border-emerald-800 inline-block mb-1">
-                  Acesso Restrito
+                  Acesso Restrito • Nuvem Conectada
                 </span>
                 <h2 className="text-lg font-black text-white leading-tight">
                   Painel do Administrador
@@ -155,6 +142,33 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
           {/* Corpo do Login */}
           <div className="p-6 sm:p-7">
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Campo E-mail */}
+              <div>
+                <label 
+                  htmlFor="admin-email-input" 
+                  className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5"
+                >
+                  <Mail className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>E-mail do Administrador:</span>
+                </label>
+                <div className="relative">
+                  <input
+                    id="admin-email-input"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setErrorMessage('');
+                    }}
+                    placeholder="seu-email@escola.com"
+                    className="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-800 border border-slate-700 rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                  />
+                  <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                </div>
+              </div>
+
+              {/* Campo Senha */}
               <div>
                 <label 
                   htmlFor="admin-password-input" 
@@ -163,9 +177,6 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                   <span className="flex items-center gap-1.5">
                     <KeyRound className="w-3.5 h-3.5 text-emerald-400" />
                     <span>Senha de Acesso:</span>
-                  </span>
-                  <span className="text-[11px] text-slate-500 font-normal">
-                    Chave editorial do portal
                   </span>
                 </label>
 
@@ -216,7 +227,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
               </div>
 
               {/* Teclado Numérico Virtual Rápido */}
-              <div className="pt-2">
+              <div className="pt-1">
                 <p className="text-[11px] font-semibold text-slate-400 mb-2 text-center">
                   Teclado Numérico Rápido:
                 </p>
@@ -262,17 +273,17 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
               </div>
 
               {/* Botão de Entrar */}
-              <div className="pt-3">
+              <div className="pt-2">
                 <motion.button
                   id="btn-submit-admin-login"
                   type="submit"
-                  disabled={isSubmitting || !password}
+                  disabled={isSubmitting || !password || !email}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className={`w-full py-3 px-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 text-white shadow-md transition-all cursor-pointer ${
                     isSuccess
                       ? 'bg-emerald-600'
-                      : isSubmitting || !password
+                      : isSubmitting || !password || !email
                       ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
                       : 'bg-emerald-700 hover:bg-emerald-600 shadow-emerald-950/30'
                   }`}
