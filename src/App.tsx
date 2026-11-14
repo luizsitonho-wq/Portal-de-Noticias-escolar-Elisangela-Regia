@@ -625,7 +625,7 @@ export default function App() {
         featuredNews={featuredNews}
         onUpdateFeaturedNews={handleUpdateFeaturedNews}
         onDeleteFeaturedNews={handleDeleteFeaturedNews}
-        newsList={newsList}
+        newsList={news}
         onAddNews={handleAddNews}
         onUpdateNews={handleUpdateNews}
         onDeleteNews={handleDeleteNews}
