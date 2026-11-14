@@ -1532,4 +1532,208 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-300">Turma / Série</label>
-                  <input type="text" value={adminForm.gradeClass ?? ""} onChange={(e) => setAdminForm({ ...adminForm, gradeClass: e.target.value })} className="w
+                  <input type="text" value={adminForm.gradeClass ?? ""} onChange={(e) => setAdminForm({ ...adminForm, gradeClass: e.target.value })} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300">E-mail</label>
+                  <input type="email" value={adminForm.email ?? ""} onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300">Telefone</label>
+                  <input type="text" value={adminForm.phone ?? ""} onChange={(e) => setAdminForm({ ...adminForm, phone: e.target.value })} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" />
+                </div>
+                <div className="md:col-span-3 flex justify-end">
+                  <button type="submit" className="px-5 py-2.5 rounded-xl bg-emerald-700 text-white font-bold text-xs uppercase cursor-pointer">Salvar Administrador</button>
+                </div>
+              </form>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {filteredAdmins.map((adm) => (
+                  <div key={adm.id} className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 flex justify-between items-start">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h5 className="text-sm font-bold text-white">{adm.name}</h5>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-emerald-400 border border-slate-700">{adm.team}</span>
+                      </div>
+                      <p className="text-xs text-emerald-300">{adm.role}</p>
+                      <p className="text-[11px] text-slate-400">{adm.gradeClass}</p>
+                    </div>
+                    <div className="flex gap-1">
+                      <button onClick={() => handleStartEditAdmin(adm)} className="p-1.5 rounded-lg bg-slate-800 text-slate-200 cursor-pointer"><Edit3 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setDeleteTarget({ type: 'admin', id: adm.id, title: adm.name })} className="p-1.5 rounded-lg bg-red-950/60 text-red-300 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'gremio' && (
+            <div className="space-y-6">
+              <div className="p-5 rounded-2xl bg-amber-950/20 border border-amber-800/50 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <Vote className="w-4 h-4 text-amber-400" />
+                    <span>Enquete dos Alunos (Grêmio)</span>
+                  </h3>
+                  <label className="flex items-center gap-2 text-xs font-bold text-amber-300 cursor-pointer">
+                    <input type="checkbox" checked={pollIsActive} onChange={(e) => setPollIsActive(e.target.checked)} />
+                    <span>Votação Aberta</span>
+                  </label>
+                </div>
+                <form onSubmit={handleSavePollConfig} className="space-y-3">
+                  <input type="text" value={pollQuestion} onChange={(e) => setPollQuestion(e.target.value)} placeholder="Pergunta da enquete..." className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" required />
+                  <input type="text" value={pollDescription} onChange={(e) => setPollDescription(e.target.value)} placeholder="Descrição..." className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" />
+                  {pollOptionsList.map((opt, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <input type="text" value={opt.label} onChange={(e) => { const u = [...pollOptionsList]; u[idx].label = e.target.value; setPollOptionsList(u); }} className="flex-1 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs" />
+                      <span className="text-xs text-amber-300 font-mono">{opt.votes} votos</span>
+                      {pollOptionsList.length > 2 && (
+                        <button type="button" onClick={() => setPollOptionsList(pollOptionsList.filter((_, i) => i !== idx))} className="p-1.5 rounded-lg bg-red-950/60 text-red-300 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
+                      )}
+                    </div>
+                  ))}
+                  <div className="flex gap-2">
+                    <input type="text" value={newOptionLabel} onChange={(e) => setNewOptionLabel(e.target.value)} placeholder="Nova opção..." className="flex-1 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs" />
+                    <button type="button" onClick={() => { if (!newOptionLabel.trim()) return; setPollOptionsList([...pollOptionsList, { label: newOptionLabel.trim(), votes: 0 }]); setNewOptionLabel(''); }} className="px-3 py-1.5 rounded-xl bg-slate-800 text-amber-300 text-xs font-bold cursor-pointer">+ Opção</button>
+                  </div>
+                  <div className="flex flex-wrap justify-end gap-2 pt-2">
+                    <button type="button" onClick={handleStartNewPoll} className="px-4 py-2 rounded-xl bg-amber-600 text-slate-950 font-bold text-xs uppercase cursor-pointer">Nova Enquete (Zerar Votos)</button>
+                    <button type="submit" className="px-5 py-2 rounded-xl bg-emerald-700 text-white font-bold text-xs uppercase cursor-pointer">Salvar Enquete</button>
+                  </div>
+                </form>
+              </div>
+
+              <form onSubmit={handleSaveGremio} className="p-5 rounded-2xl bg-slate-950/70 border border-slate-800 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-2 space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300">Título do Projeto</label>
+                  <input type="text" value={gremioForm.title ?? ""} onChange={(e) => setGremioForm({ ...gremioForm, title: e.target.value })} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" required />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300">Status</label>
+                  <select value={gremioForm.status ?? "Em andamento"} onChange={(e) => setGremioForm({ ...gremioForm, status: e.target.value as GremioAction['status'] })} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm">
+                    <option value="Em andamento">Em andamento</option>
+                    <option value="Concluído">Concluído</option>
+                    <option value="Próximo">Próximo</option>
+                  </select>
+                </div>
+                <div className="md:col-span-3 space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300">Descrição</label>
+                  <textarea rows={2} value={gremioForm.description ?? ""} onChange={(e) => setGremioForm({ ...gremioForm, description: e.target.value })} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" required />
+                </div>
+                <div className="md:col-span-3 flex justify-end">
+                  <button type="submit" className="px-5 py-2.5 rounded-xl bg-emerald-700 text-white font-bold text-xs uppercase cursor-pointer">Salvar Projeto</button>
+                </div>
+              </form>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {gremioActions.map((g) => (
+                  <div key={g.id} className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 flex justify-between items-start">
+                    <div>
+                      <h5 className="text-sm font-bold text-white">{g.title}</h5>
+                      <p className="text-xs text-slate-300">{g.description}</p>
+                    </div>
+                    <div className="flex gap-1">
+                      <button onClick={() => handleStartEditGremio(g)} className="p-1.5 rounded-lg bg-slate-800 text-slate-200 cursor-pointer"><Edit3 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setDeleteTarget({ type: 'gremio', id: g.id, title: g.title })} className="p-1.5 rounded-lg bg-red-950/60 text-red-300 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {activeTab === 'frases' && (
+            <div className="space-y-6">
+              <form onSubmit={handleSaveQuote} className="p-5 rounded-2xl bg-slate-950/70 border border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2 space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300">Frase</label>
+                  <input type="text" value={quoteForm.text ?? ""} onChange={(e) => setQuoteForm({ ...quoteForm, text: e.target.value })} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" required />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300">Autor</label>
+                  <input type="text" value={quoteForm.author ?? ""} onChange={(e) => setQuoteForm({ ...quoteForm, author: e.target.value })} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" required />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-300">Papel</label>
+                  <input type="text" value={quoteForm.role ?? ""} onChange={(e) => setQuoteForm({ ...quoteForm, role: e.target.value })} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" />
+                </div>
+                <div className="md:col-span-2 flex justify-end">
+                  <button type="submit" className="px-5 py-2.5 rounded-xl bg-emerald-700 text-white font-bold text-xs uppercase cursor-pointer">Salvar Frase</button>
+                </div>
+              </form>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {quotes.map((q) => (
+                  <div key={q.id} className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 flex justify-between items-start">
+                    <div>
+                      <p className="text-xs text-white italic">"{q.text}"</p>
+                      <p className="text-[11px] text-emerald-400 font-bold mt-1">{q.author}</p>
+                    </div>
+                    <div className="flex gap-1">
+                      <button onClick={() => handleStartEditQuote(q)} className="p-1.5 rounded-lg bg-slate-800 text-slate-200 cursor-pointer"><Edit3 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setDeleteTarget({ type: 'quote', id: q.id, title: q.author })} className="p-1.5 rounded-lg bg-red-950/60 text-red-300 cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'config' && (
+            <form onSubmit={(e) => { e.preventDefault(); onUpdatePortalSettings(portalSettings); showToast('✅ Configurações salvas!'); }} className="p-5 rounded-2xl bg-slate-950/70 border border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300">Nome da Escola</label>
+                <input type="text" value={portalSettings.schoolName || ''} onChange={(e) => onUpdatePortalSettings({...portalSettings, schoolName: e.target.value})} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300">Descrição</label>
+                <input type="text" value={portalSettings.description || ''} onChange={(e) => onUpdatePortalSettings({...portalSettings, description: e.target.value})} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300">Nome do Grêmio</label>
+                <input type="text" value={portalSettings.gremioName || ''} onChange={(e) => onUpdatePortalSettings({...portalSettings, gremioName: e.target.value})} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300">Diretoria Atual</label>
+                <input type="text" value={portalSettings.gremioBoard || ''} onChange={(e) => onUpdatePortalSettings({...portalSettings, gremioBoard: e.target.value})} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" />
+              </div>
+              <div className="md:col-span-2 space-y-1.5">
+                <label className="text-xs font-bold text-slate-300">Citação do Grêmio</label>
+                <input type="text" value={portalSettings.gremioQuote || ''} onChange={(e) => onUpdatePortalSettings({...portalSettings, gremioQuote: e.target.value})} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" />
+              </div>
+              <div className="md:col-span-2">
+                <button type="submit" className="px-5 py-2.5 rounded-xl bg-emerald-700 text-white font-bold text-xs uppercase cursor-pointer">Salvar Configurações</button>
+              </div>
+            </form>
+          )}
+
+          {activeTab === 'backup' && (
+            <div className="p-6 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-4">
+              <h3 className="text-sm font-bold text-white uppercase">Backup & Restauração</h3>
+              <button type="button" onClick={() => setDeleteTarget({ type: 'reset', title: 'Restaurar Dados Originais' })} className="px-4 py-2.5 rounded-xl bg-red-950/70 text-red-200 border border-red-800 text-xs font-bold cursor-pointer">
+                Restaurar Dados Originais
+              </button>
+            </div>
+          )}
+
+        </div>
+
+        <AnimatePresence>
+          {deleteTarget && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[80] bg-black/85 flex items-center justify-center p-4">
+              <div className="bg-slate-900 border border-red-500/50 rounded-3xl p-6 max-w-md w-full text-center space-y-4">
+                <h4 className="text-lg font-bold text-white">Confirmar Exclusão</h4>
+                <p className="text-xs text-slate-300">Deseja realmente excluir "{deleteTarget.title}"?</p>
+                <div className="flex justify-center gap-3">
+                  <button type="button" onClick={() => setDeleteTarget(null)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-200 text-xs font-bold cursor-pointer">Cancelar</button>
+                  <button type="button" onClick={handleExecuteDelete} className="px-5 py-2 rounded-xl bg-red-600 text-white text-xs font-bold cursor-pointer">Sim, Excluir</button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <footer className="p-3 bg-slate-950 border-t border-slate-800 text-center text-[11px] text-slate-500 font-mono">
+          Portal de Notícias Escolar Elisângela Régia • Desenvolvido pela 1ª Série de Desenvolvimento de Sistemas
+        </footer>
+      </motion.div>
+    </motion.div>
+  );
+};
