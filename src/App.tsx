@@ -47,6 +47,8 @@ import { NewsModal } from './components/NewsModal';
 import { Footer } from './components/Footer';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { AdminPanel } from './components/AdminPanel';
+import { NewsArticleModal } from './components/NewsArticleModal';
+import { NewsCommentsModal } from './components/NewsCommentsModal';
 import { supabase, carregarDadoNuvem, salvarDadoNuvem } from './lib/supabase';
 
 const DEFAULT_SETTINGS: PortalSettings = {
