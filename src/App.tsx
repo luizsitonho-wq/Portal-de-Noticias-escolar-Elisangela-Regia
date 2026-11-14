@@ -47,10 +47,7 @@ import { NewsModal } from './components/NewsModal';
 import { Footer } from './components/Footer';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { AdminPanel } from './components/AdminPanel';
-import { NewsArticleModal } from './components/NewsArticleModal';
-import { NewsCommentsModal } from './components/NewsCommentsModal';
 import { supabase, carregarDadoNuvem, salvarDadoNuvem } from './lib/supabase';
-
 const DEFAULT_SETTINGS: PortalSettings = {
   schoolName: 'Elisângela Régia',
   description: 'Portal de Notícias Escolar',
@@ -667,14 +664,6 @@ export default function App() {
       />
       )}
       </AnimatePresence>
-
-      {/* Modal de Artigo Completo */}
-      <NewsArticleModal
-        news={selectedArticle}
-        onClose={() => setSelectedArticle(null)}
-        onLike={handleLikeNews}
-      />
-
       {/* Modal de Comentários / Discussão */}
       <NewsCommentsModal
         news={commentArticle}
