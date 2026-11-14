@@ -3,10 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// ==========================================
-// DEFINIÇÃO DOS TIPOS DE DADOS DO PORTAL
-// ==========================================
-
 export type NewsCategory = 'diario' | 'semanal' | 'mensal' | 'geral';
 
 export interface NewsItem {
@@ -32,7 +28,7 @@ export interface AssessmentItem {
   type: AssessmentType;
   title: string;
   subject: string;
-  gradeClass: string; // Ex: '3º Ano EM', '2º Ano EM', '9º Ano EF'
+  gradeClass: string;
   date: string;
   time: string;
   room: string;
@@ -56,13 +52,13 @@ export interface StarStudent {
   id: string;
   name: string;
   gradeClass: string;
-  examScore: string; // Ex: 'Média 9.9 nas Provas Bimestrais', 'Nota 10.0'
-  examSubject: string; // Ex: 'Matemática e Ciências da Natureza'
+  examScore: string;
+  examSubject: string;
   reason: string;
   category: 'Administração' | 'Des. de Sistemas' | 'Guia de Turismo' | 'Marketing Digital' | 'Geral';
   avatarBg: string;
   initials: string;
-  rankingPosition?: string; // Ex: '1º Lugar da Turma'
+  rankingPosition?: string;
 }
 
 export interface DailyMenu {
@@ -71,7 +67,9 @@ export interface DailyMenu {
   mainDish: string;
   sideDish: string;
   salad: string;
+  dessert?: string;
   nutritionalHighlights: string;
+  isSpecial?: boolean;
 }
 
 export interface GremioAction {
@@ -82,6 +80,14 @@ export interface GremioAction {
   status: 'Em andamento' | 'Concluído' | 'Próximo';
   date: string;
   leader: string;
+}
+
+export interface GremioPoll {
+  id: string;
+  question: string;
+  description: string;
+  isActive: boolean;
+  options: Record<string, number>;
 }
 
 export type FeedbackCategory = 'feedback' | 'sugestao' | 'dica_estudo' | 'macete';
@@ -107,7 +113,7 @@ export interface Quote {
 export interface Administrator {
   id: string;
   name: string;
-  role: string; // Ex: 'Líder de TI / Desenvolvedor', 'Diretora de Imprensa', 'Redator Grêmio'
+  role: string;
   team: 'Grupo de Desenvolvimento' | 'Grêmio Estudantil' | 'Direção do CETI' | 'Desenvolvimento de Sistemas' | 'Grêmio Estudantil Cecília Mendes' | 'Coordenação Pedagógica';
   gradeClass: string;
   email?: string;
