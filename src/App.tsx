@@ -663,6 +663,7 @@ export default function App() {
         onUpdatePortalSettings={handleUpdatePortalSettings}
         onResetAllData={handleResetAllData}
       />
+      </AnimatePresence>
 
       {/* Modal de Artigo Completo */}
       <NewsArticleModal
