@@ -4,23 +4,16 @@
  */
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { GremioAction } from '../types';
+import { GremioAction, GremioPoll } from '../types';
 import { 
   Sparkles, 
   Megaphone, 
   Award, 
   CheckCircle2, 
   Clock, 
-  Users, 
   Vote, 
   Heart,
-  Crown,
-  ChevronRight,
-  Flame,
-  MessageCircle,
-  ThumbsUp,
-  Share2
+  Crown
 } from 'lucide-react';
 
 interface GremioSectionProps {
@@ -29,24 +22,22 @@ interface GremioSectionProps {
   gremioName: string;
   gremioBoard: string;
   gremioQuote: string;
+  poll: GremioPoll;
+  onVotePoll: (option: string) => void;
 }
 
-/**
- * Componente: Ações do Grêmio Estudantil Cecília Mendes
- * Presidentes da Gestão: Kauane Melo & Lü Sitonho
- * Identidade Visual Exclusiva: Tons de Roxo Escuro Real (#1c0430 / #240638 / #150324), 
- * Lilás Suave (#d8b4fe) e Dourado/Amarelo (#fbbf24).
- * Repleto de interações dinâmicas, animações fluidas com motion e enquete ativa.
- */
-export const GremioSection: React.FC<GremioSectionProps> = ({ actions, onOpenFeedback, gremioName, gremioBoard, gremioQuote }) => {
-  // Enquete estudantil interativa do Grêmio
-  const [pollVotes, setPollVotes] = useState<Record<string, number>>({
-    'Anos 80 e 90 (Nostalgia)': 54,
-    'Sustentabilidade & Futurismo': 78,
-    'Cinema e Cultura Pop': 92,
-    'Festivais do Brasil (Regional)': 41,
+export const GremioSection: React.FC<GremioSectionProps> = ({ 
+  actions, 
+  onOpenFeedback, 
+  gremioName, 
+  gremioBoard, 
+  gremioQuote,
+  poll,
+  onVotePoll
+}) => {
+  const [userVoted, setUserVoted] = useState<string | null>(() => {
+    return localStorage.getItem(`voted_poll_${poll.id}`);
   });
-  const [userVoted, setUserVoted] = useState<string | null>(null);
   const [actionLikes, setActionLikes] = useState<Record<string, number>>({
     'gremio-1': 89,
     'gremio-2': 142,
@@ -54,15 +45,13 @@ export const GremioSection: React.FC<GremioSectionProps> = ({ actions, onOpenFee
   });
   const [likedActions, setLikedActions] = useState<Record<string, boolean>>({});
 
-  const totalVotes = (Object.values(pollVotes) as number[]).reduce((acc: number, curr: number) => acc + curr, 0);
+  const totalVotes = (Object.values(poll.options || {}) as number[]).reduce((acc: number, curr: number) => acc + curr, 0);
 
   const handleVote = (option: string) => {
-    if (userVoted) return;
-    setPollVotes((prev) => ({
-      ...prev,
-      [option]: prev[option] + 1,
-    }));
+    if (userVoted || !poll.isActive) return;
+    onVotePoll(option);
     setUserVoted(option);
+    localStorage.setItem(`voted_poll_${poll.id}`, option);
   };
 
   const handleLikeAction = (id: string) => {
@@ -106,7 +95,7 @@ export const GremioSection: React.FC<GremioSectionProps> = ({ actions, onOpenFee
                 </span>
               </div>
               <h2 id="heading-gremio" className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                Grêmio Estudantil <span className="text-amber-400">{gremioName}</span>
+                {gremioName}
               </h2>
               <p className="text-xs sm:text-sm text-slate-400">
                 Ações, projetos, representatividade discente e enquetes da comunidade escolar.
@@ -114,7 +103,6 @@ export const GremioSection: React.FC<GremioSectionProps> = ({ actions, onOpenFee
             </div>
           </div>
 
-          {/* Botão de contato direto com o Grêmio */}
           <button
             id="btn-sugestao-gremio"
             onClick={onOpenFeedback}
@@ -125,7 +113,7 @@ export const GremioSection: React.FC<GremioSectionProps> = ({ actions, onOpenFee
           </button>
         </div>
 
-        {/* DESTAQUE DA PRESIDÊNCIA: KAUANE MELO & LÜ SITONHO */}
+        {/* DESTAQUE DA PRESIDÊNCIA */}
         <div className="mb-6 p-4 rounded-xl bg-slate-800/80 border border-slate-700">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -155,7 +143,6 @@ export const GremioSection: React.FC<GremioSectionProps> = ({ actions, onOpenFee
 
         {/* Layout em Grid: Ações e Projetos + Enquete Estudantil */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Coluna 1 (7 colunas): Cards de Ações e Conquistas */}
           <div className="lg:col-span-7 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
@@ -206,7 +193,6 @@ export const GremioSection: React.FC<GremioSectionProps> = ({ actions, onOpenFee
                           {act.leader}
                         </span>
 
-                        {/* Botão de Apoiar */}
                         <button
                           onClick={() => handleLikeAction(act.id)}
                           className={`flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-semibold transition-colors cursor-pointer ${
@@ -240,34 +226,34 @@ export const GremioSection: React.FC<GremioSectionProps> = ({ actions, onOpenFee
               </div>
 
               <h4 className="text-sm font-bold text-white leading-snug mb-1">
-                Qual deve ser o tema da nossa Festa da Primavera 2026?
+                {poll.question}
               </h4>
               <p className="text-xs text-slate-400 mb-4 leading-relaxed">
-                Vote na sua opção favorita. O resultado orientará a comissão organizadora.
+                {poll.description}
               </p>
 
-              {/* Opções de Voto com Barras de Progresso */}
+              {/* Opções de Voto */}
               <div className="space-y-2">
-                {(Object.entries(pollVotes) as [string, number][]).map(([option, count]) => {
+                {(Object.entries(poll.options || {}) as [string, number][]).map(([option, count]) => {
                   const percentage = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
                   const isSelected = userVoted === option;
+                  const showResults = !!userVoted || !poll.isActive;
 
                   return (
                     <button
                       key={option}
                       id={`btn-vote-${option.replace(/\s+/g, '-').toLowerCase()}`}
                       onClick={() => handleVote(option)}
-                      disabled={!!userVoted}
+                      disabled={showResults}
                       className={`w-full text-left p-2.5 rounded-lg border transition-all relative overflow-hidden ${
                         isSelected
                           ? 'bg-amber-400/20 border-amber-400 text-white'
-                          : userVoted
+                          : showResults
                           ? 'bg-slate-900/60 border-slate-850 text-slate-400'
                           : 'bg-slate-900/80 hover:bg-slate-700/80 border-slate-700 text-white cursor-pointer'
                       }`}
                     >
-                      {/* Barra de porcentagem preenchida */}
-                      {userVoted && (
+                      {showResults && (
                         <div
                           style={{ width: `${percentage}%` }}
                           className={`absolute top-0 bottom-0 left-0 ${
@@ -281,7 +267,7 @@ export const GremioSection: React.FC<GremioSectionProps> = ({ actions, onOpenFee
                           {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />}
                           <span>{option}</span>
                         </span>
-                        {userVoted && (
+                        {showResults && (
                           <span className="font-bold text-amber-300 font-mono ml-2">
                             {percentage}% ({count})
                           </span>
@@ -293,9 +279,10 @@ export const GremioSection: React.FC<GremioSectionProps> = ({ actions, onOpenFee
               </div>
             </div>
 
-            {/* Status da votação */}
             <div className="mt-4 pt-3 border-t border-slate-700/70 text-xs text-center text-slate-400">
-              {userVoted ? (
+              {!poll.isActive ? (
+                <p className="text-amber-300 font-medium">Votação encerrada pela administração.</p>
+              ) : userVoted ? (
                 <p className="text-amber-300 font-medium flex items-center justify-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                   <span>Voto computado com sucesso!</span>
@@ -312,4 +299,3 @@ export const GremioSection: React.FC<GremioSectionProps> = ({ actions, onOpenFee
     </section>
   );
 };
-
