@@ -617,4 +617,73 @@ export default function App() {
           <AdminPanel
             isOpen={adminPanelOpen}
             onClose={() => setAdminPanelOpen(false)}
-            onLogout={handle
+            onLogout={handleLogout}
+        featuredNews={featuredNews}
+        onUpdateFeaturedNews={handleUpdateFeaturedNews}
+        onDeleteFeaturedNews={handleDeleteFeaturedNews}
+        newsList={newsList}
+        onAddNews={handleAddNews}
+        onUpdateNews={handleUpdateNews}
+        onDeleteNews={handleDeleteNews}
+        events={events}
+        onAddEvent={handleAddEvent}
+        onUpdateEvent={handleUpdateEvent}
+        onDeleteEvent={handleDeleteEvent}
+        feedbacks={feedbacks}
+        onAddFeedback={handleAddFeedback}
+        onUpdateFeedback={handleUpdateFeedback}
+        onDeleteFeedback={handleDeleteFeedback}
+        onBoostFeedbackLikes={handleBoostFeedbackLikes}
+        dailyMenus={dailyMenus}
+        onUpdateDailyMenu={handleUpdateDailyMenu}
+        onReorderDailyMenus={handleReorderDailyMenus}
+        assessments={assessments}
+        onAddAssessment={handleAddAssessment}
+        onUpdateAssessment={handleUpdateAssessment}
+        onDeleteAssessment={handleDeleteAssessment}
+        starStudents={starStudents}
+        onAddStarStudent={handleAddStarStudent}
+        onUpdateStarStudent={handleUpdateStarStudent}
+        onDeleteStarStudent={handleDeleteStarStudent}
+        administrators={administrators}
+        onAddAdministrator={handleAddAdministrator}
+        onUpdateAdministrator={handleUpdateAdministrator}
+        onDeleteAdministrator={handleDeleteAdministrator}
+        gremioActions={gremioActions}
+        onAddGremioAction={handleAddGremioAction}
+        onUpdateGremioAction={handleUpdateGremioAction}
+        onDeleteGremioAction={handleDeleteGremioAction}
+        gremioPoll={gremioPoll}
+        onUpdateGremioPoll={handleUpdateGremioPoll}
+        quotes={quotes}
+        onAddQuote={handleAddQuote}
+        onUpdateQuote={handleUpdateQuote}
+        onDeleteQuote={handleDeleteQuote}
+        portalSettings={portalSettings}
+        onUpdatePortalSettings={handleUpdatePortalSettings}
+        onResetAllData={handleResetAllData}
+      />
+
+      {/* Modal de Artigo Completo */}
+      <NewsArticleModal
+        news={selectedArticle}
+        onClose={() => setSelectedArticle(null)}
+        onLike={handleLikeNews}
+      />
+
+      {/* Modal de Comentários / Discussão */}
+      <NewsCommentsModal
+        news={commentArticle}
+        comments={commentArticle ? (newsComments[commentArticle.id] || []) : []}
+        onClose={() => setCommentArticle(null)}
+        onAddComment={(authorName, gradeClass, text) => {
+          if (commentArticle) {
+            handleAddComment(commentArticle.id, authorName, gradeClass, text);
+          }
+        }}
+      />
+    </div>
+  );
+}
+
+export default App;
