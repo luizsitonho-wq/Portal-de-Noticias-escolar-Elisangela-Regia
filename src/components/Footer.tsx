@@ -4,7 +4,6 @@
  */
 
 import React from 'react';
-import { motion } from 'motion/react';
 import { 
   GraduationCap, 
   MapPin, 
@@ -12,12 +11,8 @@ import {
   Mail, 
   Clock, 
   Sparkles, 
-  Heart,
   ArrowUp,
   BookOpen,
-  Calendar,
-  Utensils,
-  Award,
   Lock
 } from 'lucide-react';
 import { PortalSettings } from '../types';
@@ -28,11 +23,6 @@ interface FooterProps {
   settings: PortalSettings;
 }
 
-/**
- * Componente: Rodapé do Portal Escolar
- * Estruturado semanticamente com <footer>, contendo informações de contato,
- * canais de atendimento da secretaria, links rápidos e créditos institucionais.
- */
 export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenAdmin, settings }) => {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -76,7 +66,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenAdmin, setting
               <li>
                 <button
                   onClick={() => onNavigate('noticias-diario')}
-                  className="hover:text-white transition-colors text-left"
+                  className="hover:text-white transition-colors text-left cursor-pointer"
                 >
                   Notícias Gerais
                 </button>
@@ -84,7 +74,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenAdmin, setting
               <li>
                 <button
                   onClick={() => onNavigate('provas-simulados')}
-                  className="hover:text-white transition-colors text-left"
+                  className="hover:text-white transition-colors text-left cursor-pointer"
                 >
                   Avaliações & Simulados
                 </button>
@@ -92,7 +82,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenAdmin, setting
               <li>
                 <button
                   onClick={() => onNavigate('eventos-escolares')}
-                  className="hover:text-white transition-colors text-left"
+                  className="hover:text-white transition-colors text-left cursor-pointer"
                 >
                   Agenda de Eventos
                 </button>
@@ -100,7 +90,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenAdmin, setting
               <li>
                 <button
                   onClick={() => onNavigate('alunos-destaque')}
-                  className="hover:text-white transition-colors text-left"
+                  className="hover:text-white transition-colors text-left cursor-pointer"
                 >
                   Alunos em Destaque
                 </button>
@@ -108,7 +98,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenAdmin, setting
               <li>
                 <button
                   onClick={() => onNavigate('cardapio-dia')}
-                  className="hover:text-white transition-colors text-left"
+                  className="hover:text-white transition-colors text-left cursor-pointer"
                 >
                   Cardápio da Merenda
                 </button>
@@ -116,15 +106,15 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenAdmin, setting
               <li>
                 <button
                   onClick={() => onNavigate('gremio-estudantil')}
-                  className="text-amber-400 hover:text-amber-300 transition-colors text-left font-medium"
+                  className="hover:text-white transition-colors text-left cursor-pointer"
                 >
-                  Grêmio Estudantil Cecília Mendes
+                  Grêmio Estudantil
                 </button>
               </li>
               <li>
                 <button
                   onClick={() => onNavigate('feedback-sugestoes')}
-                  className="hover:text-white transition-colors text-left"
+                  className="hover:text-white transition-colors text-left cursor-pointer"
                 >
                   Mural & Sugestões
                 </button>
