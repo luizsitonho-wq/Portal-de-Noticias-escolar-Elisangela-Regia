@@ -15,12 +15,9 @@ import {
   Sparkles,
   BookOpen, 
   Utensils, 
-  Users, 
   Award, 
   MessageSquareQuote,
   Clock,
-  ChevronRight,
-  Flame,
   Moon,
   Sun
 } from 'lucide-react';
@@ -36,21 +33,11 @@ interface HeaderProps {
   onToggleTheme: () => void;
 }
 
-/**
- * Componente: Cabeçalho do Portal de Notícias
- * Inspirado nos grandes portais jornalísticos brasileiros (G1, Folha de S.Paulo, Estadão):
- * - Barra de utilidades e plantão (ticker) de avisos em tempo real
- * - Cabeçalho com identidade visual sóbria, limpa e de alta legibilidade
- * - Barra de editorias horizontais com indicador sutil
- * - Acesso rápido à área de gestão escolar
- */
 export const Header: React.FC<HeaderProps> = ({
   searchTerm,
   onSearchChange,
   activeSection,
   onNavigate,
-  onOpenAdmin,
-  isAdminLoggedIn,
   isDarkMode,
   onToggleTheme,
 }) => {
@@ -58,7 +45,6 @@ export const Header: React.FC<HeaderProps> = ({
   const [currentDateTime, setCurrentDateTime] = useState<string>('');
   const [tickerIndex, setTickerIndex] = useState(0);
 
-  // Avisos dinâmicos em rotação contínua (Plantão Escolar)
   const announcements = [
     'Grêmio Estudantil: Gestão oficial com Kauane Melo & Lü Sitonho!',
     'Calendário: Provas Bimestrais e Simulados Técnicos em andamento.',
@@ -73,7 +59,6 @@ export const Header: React.FC<HeaderProps> = ({
     return () => clearInterval(timer);
   }, [announcements.length]);
 
-  // Atualização em tempo real da data e hora atual
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -95,7 +80,6 @@ export const Header: React.FC<HeaderProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  // Itens de navegação principal (Editorias)
   const navItems = [
     { id: 'noticias-diario', label: 'Diário & Notícias', icon: BookOpen },
     { id: 'provas-simulados', label: 'Provas & Simulados', icon: Calendar },
@@ -116,7 +100,6 @@ export const Header: React.FC<HeaderProps> = ({
       {/* 1. Barra Superior de Utilidades e Plantão de Notícias */}
       <div className="bg-slate-900 dark:bg-slate-950 text-slate-200 text-xs py-1.5 px-4 sm:px-6 lg:px-8 border-b border-slate-800 dark:border-slate-900">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-          {/* Plantão / Ticker */}
           <div className="flex items-center gap-2 overflow-hidden flex-1 min-w-0">
             <span className="flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-emerald-600 text-white">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-200 animate-ping inline-block" />
@@ -138,14 +121,12 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Data, Alternador de Tema & Acesso Administrativo */}
           <div className="flex items-center gap-2.5 font-sans text-slate-400 text-[11px] flex-shrink-0 ml-auto">
             <div className="flex items-center gap-1.5 text-slate-300">
               <Clock className="w-3.5 h-3.5 text-slate-400" />
               <span>{currentDateTime || 'Carregando...'}</span>
             </div>
 
-            {/* Botão de Alternar Modo Escuro / Claro */}
             <button
               id="btn-header-theme-toggle-top"
               type="button"
@@ -167,7 +148,6 @@ export const Header: React.FC<HeaderProps> = ({
       {/* 2. Faixa Principal: Masthead do Portal & Busca */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
         <div className="flex items-center justify-between gap-4">
-          {/* Masthead do Portal */}
           <div 
             onClick={() => handleLinkClick('inicio')}
             className="flex items-center gap-3.5 cursor-pointer group select-none"
@@ -178,7 +158,7 @@ export const Header: React.FC<HeaderProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="font-editorial text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-slate-950 dark:text-white leading-tight">
-                  Portal de Notícias Elisângela Régia
+                  Portal de Notícias Escolar Elisângela Régia
                 </h1>
                 <span className="hidden md:inline-flex items-center text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700">
                   Edição Escolar
@@ -190,7 +170,6 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Área de Busca (Desktop) */}
           <div className="hidden md:flex items-center flex-1 max-w-xs lg:max-w-sm ml-4">
             <div className="relative w-full">
               <input
@@ -215,7 +194,6 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Botões Mobile: Menu Hamburguer */}
           <div className="flex items-center gap-1.5 md:hidden">
             <button
               id="btn-mobile-menu-toggle"
@@ -228,7 +206,6 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Campo de busca no mobile quando visível */}
         <div className="mt-3 md:hidden">
           <div className="relative w-full">
             <input
@@ -244,14 +221,13 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* 3. Barra de Editorias (Navegação Horizontal Estilo Grandes Portais) */}
+      {/* 3. Barra de Editorias */}
       <nav id="nav-desktop" aria-label="Navegação Principal de Editorias" className="hidden md:block bg-slate-50/80 dark:bg-slate-900/90 border-t border-slate-200 dark:border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <ul className="flex items-center gap-1 overflow-x-auto py-1 text-sm font-medium scrollbar-none">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeSection === item.id;
-              const isGremio = item.id === 'gremio-estudantil';
 
               return (
                 <li key={item.id}>
@@ -274,7 +250,6 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </nav>
 
-      {/* Menu Gaveta Mobile */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.nav 
@@ -314,4 +289,3 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
-
