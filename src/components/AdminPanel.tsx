@@ -1281,7 +1281,95 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       type="file"
                       accept="image/*"
                       onChange={(e) => {
-                        const file = e.target.
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => setEventForm({ ...eventForm, imageUrl: reader.result as string });
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 text-sm"
+                    />
+                    <input type="text" value={eventForm.imageUrl ?? ""} onChange={(e) => setEventForm({ ...eventForm, imageUrl: e.target.value })} placeholder="Ou cole URL..." className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm mt-2" />
+                  </div>
+                  <div className="md:col-span-2 pt-2 flex justify-end">
+                    <button type="submit" className="px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs uppercase flex items-center gap-2 cursor-pointer">
+                      <Save className="w-4 h-4" />
+                      <span>{editingEventId ? 'Salvar Alterações' : 'Publicar Evento'}</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Eventos Cadastrados ({events.length})</h4>
+                {events.map((evt) => (
+                  <div key={evt.id} className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-center justify-between gap-4">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-purple-950 text-purple-300">{evt.category}</span>
+                      <h5 className="text-sm font-bold text-white mt-1">{evt.title}</h5>
+                      <p className="text-[11px] text-slate-400">{evt.date} • {evt.location}</p>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <button onClick={() => handleStartEditEvent(evt)} className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 cursor-pointer"><Edit3 className="w-4 h-4" /></button>
+                      <button onClick={() => setDeleteTarget({ type: 'event', id: evt.id, title: evt.title })} className="p-2 bg-red-950/60 hover:bg-red-900 rounded-lg text-red-300 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'provas' && (
+            <div className="space-y-6">
+              <div className="p-5 rounded-2xl bg-slate-950/70 border border-slate-800">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">
+                  {editingAssessmentId ? '✏️ Editando Avaliação' : '➕ Agendar Nova Prova'}
+                </h3>
+                <form onSubmit={handleSaveAssessment} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-300">Título</label>
+                    <input type="text" value={assessmentForm.title ?? ""} onChange={(e) => setAssessmentForm({ ...assessmentForm, title: e.target.value })} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" required />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-300">Disciplina</label>
+                    <input type="text" value={assessmentForm.subject ?? ""} onChange={(e) => setAssessmentForm({ ...assessmentForm, subject: e.target.value })} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" required />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-300">Turma</label>
+                    <input type="text" value={assessmentForm.gradeClass ?? ""} onChange={(e) => setAssessmentForm({ ...assessmentForm, gradeClass: e.target.value })} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-300">Data (AAAA-MM-DD)</label>
+                    <input type="text" value={assessmentForm.date ?? ""} onChange={(e) => setAssessmentForm({ ...assessmentForm, date: e.target.value })} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" required />
+                  </div>
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-xs font-bold text-slate-300">Tópicos (Separados por vírgula)</label>
+                    <input type="text" value={topicsInput} onChange={(e) => setTopicsInput(e.target.value)} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" />
+                  </div>
+                  <div className="md:col-span-2 pt-2 flex justify-end">
+                    <button type="submit" className="px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs uppercase flex items-center gap-2 cursor-pointer">
+                      <Save className="w-4 h-4" /> <span>{editingAssessmentId ? 'Salvar' : 'Cadastrar'}</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+              <div className="space-y-3">
+                {assessments.map(a => (
+                  <div key={a.id} className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 flex justify-between items-center">
+                    <div>
+                      <h5 className="text-sm font-bold text-white">{a.title} ({a.subject})</h5>
+                      <p className="text-[11px] text-emerald-400">{a.date} | {a.gradeClass}</p>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <button onClick={() => handleStartEditAssessment(a)} className="p-2 bg-slate-800 rounded-lg text-slate-300 cursor-pointer"><Edit3 className="w-4 h-4" /></button>
+                      <button onClick={() => setDeleteTarget({ type: 'assessment', id: a.id, title: a.title })} className="p-2 bg-red-950/60 rounded-lg text-red-300 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
                           {activeTab === 'mural' && (
             <div className="space-y-6">
               <div className="p-5 rounded-2xl bg-slate-950/70 border border-slate-800">
