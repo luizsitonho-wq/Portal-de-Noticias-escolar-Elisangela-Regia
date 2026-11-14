@@ -14,6 +14,7 @@ import {
   StarStudent, 
   DailyMenu, 
   GremioAction, 
+  GremioPoll,
   Quote,
   Administrator,
   PortalSettings
@@ -63,6 +64,19 @@ const DEFAULT_SETTINGS: PortalSettings = {
   gremioQuote: 'Trabalhando por uma escola viva, acolhedora, participativa e cheia de oportunidades!',
 };
 
+const DEFAULT_POLL: GremioPoll = {
+  id: 'poll-2026-1',
+  question: 'Qual deve ser o tema da nossa Festa da Primavera 2026?',
+  description: 'Vote na sua opção favorita. O resultado orientará a comissão organizadora.',
+  isActive: true,
+  options: {
+    'Anos 80 e 90 (Nostalgia)': 54,
+    'Sustentabilidade & Futurismo': 78,
+    'Cinema e Cultura Pop': 92,
+    'Festivais do Brasil (Regional)': 41,
+  },
+};
+
 export default function App() {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [isLoadedFromCloud, setIsLoadedFromCloud] = useState<boolean>(false);
@@ -96,61 +110,69 @@ export default function App() {
   const [adminLoginModalOpen, setAdminLoginModalOpen] = useState<boolean>(false);
   const [adminPanelOpen, setAdminPanelOpen] = useState<boolean>(false);
 
-  // Estados principais do portal
-  const [featuredNews, setFeaturedNews] = useState<NewsItem>(featuredNewsData);
+  // Estados principais do portal (featuredNews agora pode ser null quando apagado!)
+  const [featuredNews, setFeaturedNews] = useState<NewsItem | null>(featuredNewsData);
   const [news, setNews] = useState<NewsItem[]>(initialNewsList);
   const [quotes, setQuotes] = useState<Quote[]>(quotesList);
   const [assessments, setAssessments] = useState<AssessmentItem[]>(assessmentsList);
-  const [events] = useState<SchoolEvent[]>(schoolEventsList);
+  const [events, setEvents] = useState<SchoolEvent[]>(schoolEventsList);
   const [starStudents, setStarStudents] = useState<StarStudent[]>(starStudentsList);
   const [dailyMenus, setDailyMenus] = useState<DailyMenu[]>(weeklyMenuData);
   const [gremioActions, setGremioActions] = useState<GremioAction[]>(gremioActionsList);
+  const [gremioPoll, setGremioPoll] = useState<GremioPoll>(DEFAULT_POLL);
   const [feedbacks, setFeedbacks] = useState<FeedbackSubmission[]>(initialFeedbacks);
   const [administrators, setAdministrators] = useState<Administrator[]>(initialAdministrators);
 
-  // =========================================================
-  // CARREGA DADOS DO SUPABASE E VERIFICA SESSÃO AO ABRIR
-  // =========================================================
   useEffect(() => {
     async function inicializarPortal() {
-      // 1. Verifica se o administrador já está logado
       const { data: sessionData } = await supabase.auth.getSession();
       if (sessionData.session) {
         setIsAdminLoggedIn(true);
       }
 
-      // 2. Busca todos os dados salvos na nuvem em paralelo
       const [
         cloudFeatured,
         cloudNews,
         cloudQuotes,
         cloudAssessments,
+        cloudEvents,
         cloudStudents,
         cloudMenus,
         cloudGremio,
+        cloudPoll,
         cloudFeedbacks,
         cloudAdmins,
         cloudSettings,
       ] = await Promise.all([
-        carregarDadoNuvem<NewsItem>('featured_news'),
+        carregarDadoNuvem<NewsItem | { empty: true }>('featured_news'),
         carregarDadoNuvem<NewsItem[]>('news'),
         carregarDadoNuvem<Quote[]>('quotes'),
         carregarDadoNuvem<AssessmentItem[]>('assessments'),
+        carregarDadoNuvem<SchoolEvent[]>('events'),
         carregarDadoNuvem<StarStudent[]>('star_students'),
         carregarDadoNuvem<DailyMenu[]>('daily_menus'),
         carregarDadoNuvem<GremioAction[]>('gremio_actions'),
+        carregarDadoNuvem<GremioPoll>('gremio_poll'),
         carregarDadoNuvem<FeedbackSubmission[]>('feedbacks'),
         carregarDadoNuvem<Administrator[]>('administrators'),
         carregarDadoNuvem<PortalSettings>('settings'),
       ]);
 
-      if (cloudFeatured) setFeaturedNews(cloudFeatured);
+      if (cloudFeatured) {
+        if ('empty' in cloudFeatured && cloudFeatured.empty) {
+          setFeaturedNews(null);
+        } else {
+          setFeaturedNews(cloudFeatured as NewsItem);
+        }
+      }
       if (cloudNews) setNews(cloudNews);
       if (cloudQuotes) setQuotes(cloudQuotes);
       if (cloudAssessments) setAssessments(cloudAssessments);
+      if (cloudEvents) setEvents(cloudEvents);
       if (cloudStudents) setStarStudents(cloudStudents);
       if (cloudMenus) setDailyMenus(cloudMenus);
       if (cloudGremio) setGremioActions(cloudGremio);
+      if (cloudPoll) setGremioPoll(cloudPoll);
       if (cloudFeedbacks) setFeedbacks(cloudFeedbacks);
       if (cloudAdmins) setAdministrators(cloudAdmins);
       if (cloudSettings) setPortalSettings(cloudSettings);
@@ -160,10 +182,6 @@ export default function App() {
 
     inicializarPortal();
   }, []);
-
-  // =========================================================
-  // HANDLERS DO PAINEL ADMINISTRATIVO
-  // =========================================================
 
   const handleOpenAdmin = () => {
     if (isAdminLoggedIn) {
@@ -192,6 +210,11 @@ export default function App() {
       salvarDadoNuvem('news', updated);
       return updated;
     });
+    // Se não havia notícia destaque, a nova publicada vira o destaque automaticamente
+    if (!featuredNews) {
+      setFeaturedNews(newItem);
+      salvarDadoNuvem('featured_news', newItem);
+    }
   };
 
   const handleUpdateNews = (updatedItem: NewsItem) => {
@@ -200,7 +223,7 @@ export default function App() {
       salvarDadoNuvem('news', updated);
       return updated;
     });
-    if (featuredNews.id === updatedItem.id) {
+    if (featuredNews && featuredNews.id === updatedItem.id) {
       setFeaturedNews(updatedItem);
       salvarDadoNuvem('featured_news', updatedItem);
     }
@@ -210,13 +233,33 @@ export default function App() {
     setNews((prev) => {
       const filtered = prev.filter((item) => item.id !== id);
       salvarDadoNuvem('news', filtered);
-      if (featuredNews.id === id) {
-        const nextFeatured = filtered.length > 0 ? filtered[0] : featuredNewsData;
-        setFeaturedNews(nextFeatured);
-        salvarDadoNuvem('featured_news', nextFeatured);
+      if (featuredNews && featuredNews.id === id) {
+        if (filtered.length > 0) {
+          setFeaturedNews(filtered[0]);
+          salvarDadoNuvem('featured_news', filtered[0]);
+        } else {
+          setFeaturedNews(null);
+          salvarDadoNuvem('featured_news', { empty: true });
+        }
       }
       return filtered;
     });
+  };
+
+  const handleDeleteFeaturedNews = () => {
+    if (!featuredNews) return;
+    const currentId = featuredNews.id;
+    const remaining = news.filter((item) => item.id !== currentId);
+    setNews(remaining);
+    salvarDadoNuvem('news', remaining);
+
+    if (remaining.length > 0) {
+      setFeaturedNews(remaining[0]);
+      salvarDadoNuvem('featured_news', remaining[0]);
+    } else {
+      setFeaturedNews(null);
+      salvarDadoNuvem('featured_news', { empty: true });
+    }
   };
 
   const handleUpdateFeaturedNews = (newFeatured: NewsItem) => {
@@ -232,7 +275,52 @@ export default function App() {
     });
   };
 
-  // Feedbacks (Visitantes e Admin)
+  // Eventos Escolares
+  const handleAddEvent = (newEvt: SchoolEvent) => {
+    setEvents((prev) => {
+      const updated = [newEvt, ...prev];
+      salvarDadoNuvem('events', updated);
+      return updated;
+    });
+  };
+
+  const handleUpdateEvent = (updatedEvt: SchoolEvent) => {
+    setEvents((prev) => {
+      const updated = prev.map((e) => (e.id === updatedEvt.id ? updatedEvt : e));
+      salvarDadoNuvem('events', updated);
+      return updated;
+    });
+  };
+
+  const handleDeleteEvent = (id: string) => {
+    setEvents((prev) => {
+      const updated = prev.filter((e) => e.id !== id);
+      salvarDadoNuvem('events', updated);
+      return updated;
+    });
+  };
+
+  // Enquete do Grêmio
+  const handleVotePoll = (option: string) => {
+    setGremioPoll((prev) => {
+      const updated: GremioPoll = {
+        ...prev,
+        options: {
+          ...prev.options,
+          [option]: (prev.options[option] || 0) + 1,
+        },
+      };
+      salvarDadoNuvem('gremio_poll', updated);
+      return updated;
+    });
+  };
+
+  const handleUpdateGremioPoll = (updatedPoll: GremioPoll) => {
+    setGremioPoll(updatedPoll);
+    salvarDadoNuvem('gremio_poll', updatedPoll);
+  };
+
+  // Feedbacks
   const handleAddFeedback = (newFb: FeedbackSubmission) => {
     setFeedbacks((prev) => {
       const updated = [newFb, ...prev];
@@ -404,21 +492,21 @@ export default function App() {
     });
   };
 
-  // Configurações do Portal
   const handleUpdateSettings = (newSettings: PortalSettings) => {
     setPortalSettings(newSettings);
     salvarDadoNuvem('settings', newSettings);
   };
 
-  // Restaurar dados originais na nuvem
   const handleResetAllData = async () => {
     setFeaturedNews(featuredNewsData);
     setNews(initialNewsList);
     setQuotes(quotesList);
     setAssessments(assessmentsList);
+    setEvents(schoolEventsList);
     setStarStudents(starStudentsList);
     setDailyMenus(weeklyMenuData);
     setGremioActions(gremioActionsList);
+    setGremioPoll(DEFAULT_POLL);
     setFeedbacks(initialFeedbacks);
     setAdministrators(initialAdministrators);
     setPortalSettings(DEFAULT_SETTINGS);
@@ -429,9 +517,11 @@ export default function App() {
         salvarDadoNuvem('news', initialNewsList),
         salvarDadoNuvem('quotes', quotesList),
         salvarDadoNuvem('assessments', assessmentsList),
+        salvarDadoNuvem('events', schoolEventsList),
         salvarDadoNuvem('star_students', starStudentsList),
         salvarDadoNuvem('daily_menus', weeklyMenuData),
         salvarDadoNuvem('gremio_actions', gremioActionsList),
+        salvarDadoNuvem('gremio_poll', DEFAULT_POLL),
         salvarDadoNuvem('feedbacks', initialFeedbacks),
         salvarDadoNuvem('administrators', initialAdministrators),
         salvarDadoNuvem('settings', DEFAULT_SETTINGS),
@@ -466,10 +556,12 @@ export default function App() {
 
       <main id="conteudo-principal" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 sm:space-y-16">
         <div id="inicio" className="space-y-6">
-          <FeaturedNews
-            news={featuredNews}
-            onOpenModal={(item) => setSelectedNews(item)}
-          />
+          {featuredNews && (
+            <FeaturedNews
+              news={featuredNews}
+              onOpenModal={(item) => setSelectedNews(item)}
+            />
+          )}
           <QuoteOfTheDay quotes={quotes} />
         </div>
 
@@ -490,6 +582,8 @@ export default function App() {
           gremioName={portalSettings.gremioName}
           gremioBoard={portalSettings.gremioBoard}
           gremioQuote={portalSettings.gremioQuote}
+          poll={gremioPoll}
+          onVotePoll={handleVotePoll}
         />
 
         <FeedbackSection
@@ -523,53 +617,4 @@ export default function App() {
           <AdminPanel
             isOpen={adminPanelOpen}
             onClose={() => setAdminPanelOpen(false)}
-            onLogout={handleLogout}
-            featuredNews={featuredNews}
-            onUpdateFeaturedNews={handleUpdateFeaturedNews}
-            newsList={news}
-            onAddNews={handleAddNews}
-            onUpdateNews={handleUpdateNews}
-            onDeleteNews={handleDeleteNews}
-            feedbacks={feedbacks}
-            onAddFeedback={handleAddFeedback}
-            onUpdateFeedback={handleUpdateFeedback}
-            onDeleteFeedback={handleDeleteFeedback}
-            onBoostFeedbackLikes={handleBoostFeedbackLikes}
-            dailyMenus={dailyMenus}
-            onUpdateDailyMenu={handleUpdateDailyMenu}
-            onReorderDailyMenus={handleReorderDailyMenus}
-            assessments={assessments}
-            onAddAssessment={handleAddAssessment}
-            onUpdateAssessment={handleUpdateAssessment}
-            onDeleteAssessment={handleDeleteAssessment}
-            starStudents={starStudents}
-            onAddStarStudent={handleAddStarStudent}
-            onUpdateStarStudent={handleUpdateStarStudent}
-            onDeleteStarStudent={handleDeleteStarStudent}
-            administrators={administrators}
-            onAddAdministrator={handleAddAdministrator}
-            onUpdateAdministrator={handleUpdateAdministrator}
-            onDeleteAdministrator={handleDeleteAdministrator}
-            gremioActions={gremioActions}
-            onAddGremioAction={handleAddGremioAction}
-            onUpdateGremioAction={handleUpdateGremioAction}
-            onDeleteGremioAction={handleDeleteGremioAction}
-            quotes={quotes}
-            onAddQuote={handleAddQuote}
-            onUpdateQuote={handleUpdateQuote}
-            onDeleteQuote={handleDeleteQuote}
-            portalSettings={portalSettings}
-            onUpdatePortalSettings={handleUpdateSettings}
-            onResetAllData={handleResetAllData}
-          />
-        )}
-      </AnimatePresence>
-
-      <Footer 
-        onNavigate={scrollToSection} 
-        onOpenAdmin={handleOpenAdmin}
-        settings={portalSettings}
-      />
-    </div>
-  );
-}
+            onLogout={handle
