@@ -664,7 +664,7 @@ export default function App() {
         onUpdateQuote={handleUpdateQuote}
         onDeleteQuote={handleDeleteQuote}
         portalSettings={portalSettings}
-        onUpdatePortalSettings={handleUpdatePortalSettings}
+        onUpdatePortalSettings={handleUpdateSettings}
         onResetAllData={handleResetAllData}
       />
       )}
