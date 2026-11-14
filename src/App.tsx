@@ -664,6 +664,7 @@ export default function App() {
         onResetAllData={handleResetAllData}
       />
       )}
+      </AnimatePresence>
 
       {/* Modal de Artigo Completo */}
       <NewsArticleModal
