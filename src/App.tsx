@@ -664,17 +664,6 @@ export default function App() {
       />
       )}
       </AnimatePresence>
-      {/* Modal de Comentários / Discussão */}
-      <NewsCommentsModal
-        news={commentArticle}
-        comments={commentArticle ? (newsComments[commentArticle.id] || []) : []}
-        onClose={() => setCommentArticle(null)}
-        onAddComment={(authorName, gradeClass, text) => {
-          if (commentArticle) {
-            handleAddComment(commentArticle.id, authorName, gradeClass, text);
-          }
-        }}
-      />
     </div>
   );
 }
