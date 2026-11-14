@@ -930,7 +930,56 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const handleCancelQuoteEdit = () => {
     setEditingQuoteId(null);
-    setQuoteForm({
+    setQuoteForm({ text: '', author: '', role: 'Pensador & Educador' });
+  };
+
+  const handleSaveQuote = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quoteForm.text || !quoteForm.author) {
+      showToast('⚠️ Preencha o texto da citação e o autor.');
+      return;
+    }
+
+    if (editingQuoteId && onUpdateQuote) {
+      const updated: Quote = {
+        id: editingQuoteId,
+        text: quoteForm.text || '',
+        author: quoteForm.author || '',
+        role: quoteForm.role || 'Educador',
+      };
+      onUpdateQuote(updated);
+      showToast('✨ Frase atualizada com sucesso!');
+      setEditingQuoteId(null);
+    } else {
+      const newQuote: Quote = {
+        id: `quote-${Date.now()}`,
+        text: quoteForm.text || '',
+        author: quoteForm.author || '',
+        role: quoteForm.role || 'Educador',
+      };
+      onAddQuote(newQuote);
+      showToast('✨ Nova frase inspiradora adicionada!');
+    }
+    handleCancelQuoteEdit();
+  };
+
+  const filteredStudents = starStudents.filter((s) => {
+    if (studentFilter === 'all') return true;
+    return s.category === studentFilter;
+  });
+
+  const filteredAdmins = administrators.filter((a) => {
+    if (!adminSearch) return true;
+    const q = adminSearch.toLowerCase();
+    return (
+      a.name.toLowerCase().includes(q) ||
+      a.role.toLowerCase().includes(q) ||
+      a.team.toLowerCase().includes(q) ||
+      a.gradeClass.toLowerCase().includes(q)
+    );
+  });
+
+  if (!isOpen) return null;
       return (
     <motion.div
       id="modal-admin-panel"
