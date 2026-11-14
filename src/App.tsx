@@ -591,6 +591,11 @@ export default function App() {
         />
       </main>
 
+      <Footer
+        settings={portalSettings}
+        onOpenAdmin={() => setAdminLoginModalOpen(true)}
+      />
+
       <AnimatePresence>
         {selectedNews && (
           <NewsModal
