@@ -1676,7 +1676,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
           )}
 
-          {activeTab === 'config' && (
+         {activeTab === 'config' && (
             <form onSubmit={(e) => { e.preventDefault(); onUpdatePortalSettings(portalSettings); showToast('✅ Configurações salvas!'); }} className="p-5 rounded-2xl bg-slate-950/70 border border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-300">Nome da Escola</label>
@@ -1686,6 +1686,40 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <label className="text-xs font-bold text-slate-300">Descrição</label>
                 <input type="text" value={portalSettings.description || ''} onChange={(e) => onUpdatePortalSettings({...portalSettings, description: e.target.value})} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" />
               </div>
+
+              {/* Localização e Contato do Rodapé */}
+              <div className="md:col-span-2 space-y-1.5">
+                <label className="text-xs font-bold text-slate-300">Endereço da Escola (Localização no Rodapé)</label>
+                <input type="text" value={portalSettings.address || ''} onChange={(e) => onUpdatePortalSettings({...portalSettings, address: e.target.value})} placeholder="Ex: Av. dos Estudantes, 1500 - Bairro Universitário" className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300">Telefone / Ramal (Rodapé)</label>
+                <input type="text" value={portalSettings.phone || ''} onChange={(e) => onUpdatePortalSettings({...portalSettings, phone: e.target.value})} placeholder="Ex: (86) 3221-4500 / Ramal 102" className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300">E-mail da Escola (Rodapé)</label>
+                <input type="email" value={portalSettings.email || ''} onChange={(e) => onUpdatePortalSettings({...portalSettings, email: e.target.value})} placeholder="Ex: contato@elisangela-regia.edu.br" className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" />
+              </div>
+
+              {/* Horários do Expediente Escolar */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300">Turno Matutino</label>
+                <input type="text" value={portalSettings.morningShift || ''} onChange={(e) => onUpdatePortalSettings({...portalSettings, morningShift: e.target.value})} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300">Turno Vespertino</label>
+                <input type="text" value={portalSettings.afternoonShift || ''} onChange={(e) => onUpdatePortalSettings({...portalSettings, afternoonShift: e.target.value})} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300">Horário da Secretaria</label>
+                <input type="text" value={portalSettings.officeHours || ''} onChange={(e) => onUpdatePortalSettings({...portalSettings, officeHours: e.target.value})} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300">Biblioteca & Informática</label>
+                <input type="text" value={portalSettings.libraryHours || ''} onChange={(e) => onUpdatePortalSettings({...portalSettings, libraryHours: e.target.value})} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" />
+              </div>
+
+              {/* Grêmio Estudantil */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-300">Nome do Grêmio</label>
                 <input type="text" value={portalSettings.gremioName || ''} onChange={(e) => onUpdatePortalSettings({...portalSettings, gremioName: e.target.value})} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" />
@@ -1699,7 +1733,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <input type="text" value={portalSettings.gremioQuote || ''} onChange={(e) => onUpdatePortalSettings({...portalSettings, gremioQuote: e.target.value})} className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm" />
               </div>
               <div className="md:col-span-2">
-                <button type="submit" className="px-5 py-2.5 rounded-xl bg-emerald-700 text-white font-bold text-xs uppercase cursor-pointer">Salvar Configurações</button>
+                <button type="submit" className="px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs uppercase cursor-pointer">Salvar Configurações</button>
               </div>
             </form>
           )}
@@ -1731,7 +1765,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         </AnimatePresence>
 
         <footer className="p-3 bg-slate-950 border-t border-slate-800 text-center text-[11px] text-slate-500 font-mono">
-          Portal de Notícias Escolar Elisângela Régia • Desenvolvido pela 1ª Série de Desenvolvimento de Sistemas
+          Portal de Notícias Escolar Elisângela Régia • Desenvolvido pela turma de Desenvolvimento de Sistemas
         </footer>
       </motion.div>
     </motion.div>
